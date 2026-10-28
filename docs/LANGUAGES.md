@@ -48,6 +48,22 @@ The missing piece is data: recordings of Lambadi sentences, each with its exact 
 
 **Stage 3: telling Lambadi from Hindi in a reply.** Lambadi and Hindi both use Devanagari, so script alone can't route a Lambadi sentence to a Lambadi voice. The likely fix is to have Claude tag Lambadi passages, and to route on the tags. That's worth building once a Lambadi voice exists.
 
+## Planned: learning Lambadi from one speaker's conversations
+
+*Status: an idea, not started. Build it when there's a need.*
+
+The first speaker would be a family member who speaks Lambadi every day. Asking someone to read sentences off a screen is tiring, so this approach collects their speech by having them simply talk to VIPLAV.
+
+- **What he'd use:** a "talk mode" on a phone, in a large, simple layout. VIPLAV asks open questions in Hindi or Telugu: a story from the village, how a festival is celebrated, how to cook something. He answers in Lambadi for as long as he likes, and VIPLAV saves every answer as audio.
+- **The catch:** no tool can transcribe Lambadi yet, so his speech can't be turned into text automatically. Someone who knows Lambadi (you) has to type out what he said, later and at your own pace. To make that faster, the app would show each clip with a rough Hindi transcript, which you correct into Lambadi. Corrected clips then become training data.
+- **What one speaker gets you:**
+  - **A voice (good):** a Lambadi voice that sounds like him. Natural conversation varies more than read sentences, so a voice built from it needs more hours. Mixing in some read sentences (the Record page) helps.
+  - **Listening (limited):** recognition trained only on him would understand him, and other speakers less well. It's still a real start that other speakers can be added to.
+- **Things to settle first:**
+  - His clear agreement that his voice is recorded, and what happens to it. In particular, whether it may ever be shared publicly.
+  - A spelling convention for writing Lambadi down.
+- **Rough target:** an hour or two of corrected clips for a first voice. Conversation can produce that in a few relaxed sessions.
+
 ## Doing the recordings right
 
 - **Consent.** Everyone who records should know that their voice will train a model and, if you publish the dataset, that it becomes public. Get that agreement in writing, even just a signed line.
