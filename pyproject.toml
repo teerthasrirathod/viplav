@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "viplav"
+version = "0.1.0"
+description = "A voice companion that speaks your languages, including mixed ones. The mind is Claude; the ears and voice are free and can run on your own machine."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+  "anthropic>=2.3.0",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+]
+
+[project.optional-dependencies]
+# Local voices and listening. Each downloads its model once, on first use.
+kokoro = ["kokoro>=0.9", "misaki[en,hi]", "soundfile", "numpy"]  # needs Python 3.10–3.12
+mms = ["transformers>=4.40", "torch", "soundfile", "numpy"]
+indic-parler = ["parler-tts @ git+https://github.com/huggingface/parler-tts.git", "soundfile", "numpy"]
+whisper = ["faster-whisper>=1.1", "numpy"]
+local = ["viplav[kokoro,mms,whisper]"]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+viplav = "viplav.app:main"
+
+[tool.setuptools]
+packages = ["viplav", "viplav.engines"]

@@ -1,0 +1,171 @@
+:root {
+  --bg: #05080d;
+  --bg-2: #0b1220;
+  --text: #dbe7f3;
+  --muted: #7d8da1;
+  --accent: #5ad1ff;
+  --core-hi: #12324a;
+  --core-lo: #060d16;
+  --line: rgba(90, 209, 255, 0.18);
+  --level: 0; /* 0..1 voice loudness, set from JS */
+  color-scheme: dark;
+}
+body[data-state="listening"] { --accent: #6cf2c2; }
+body[data-state="hearing"]   { --accent: #8bffd5; }
+body[data-state="thinking"]  { --accent: #ffc46b; }
+body[data-state="speaking"]  { --accent: #5ad1ff; }
+body[data-state="offline"]   { --accent: #5b6573; }
+body[data-state="error"]     { --accent: #ff7a7a; }
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: radial-gradient(ellipse at 50% 35%, var(--bg-2), var(--bg) 70%);
+  color: var(--text);
+  font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px 8px;
+  min-height: 0;
+}
+
+#face {
+  width: min(70vmin, 420px);
+  height: auto;
+  transition: filter 0.4s;
+}
+
+.ring { fill: none; stroke: var(--accent); transition: stroke 0.4s; }
+.halo {
+  stroke-width: 2;
+  opacity: calc(0.25 + var(--level) * 0.75);
+  transform-origin: 200px 200px;
+  transform: scale(calc(1 + var(--level) * 0.06));
+}
+.orbit {
+  stroke-width: 3;
+  stroke-dasharray: 18 7;
+  opacity: 0.55;
+  transform-origin: 200px 200px;
+  animation: spin 24s linear infinite;
+}
+.orbit.inner { stroke-width: 1.5; stroke-dasharray: 3 4; opacity: 0.35; animation-duration: 40s; animation-direction: reverse; }
+body[data-state="thinking"] .orbit { animation-duration: 2.4s; opacity: 0.9; }
+body[data-state="thinking"] .orbit.inner { animation-duration: 3.6s; }
+body[data-state="listening"] .halo,
+body[data-state="hearing"] .halo { animation: breathe 2.2s ease-in-out infinite; }
+body[data-state="offline"] .orbit { animation-play-state: paused; }
+
+.core { stroke: var(--line); stroke-width: 1; }
+.eye { fill: var(--accent); transition: fill 0.4s; transform-box: fill-box; transform-origin: center; }
+.eye.blink { animation: blink 0.16s ease-in-out; }
+.mouth { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke 0.4s; }
+#eyes { transition: transform 0.6s ease; }
+body[data-state="thinking"] #eyes { transform: translate(6px, -8px); }
+body[data-state="hearing"] #eyes  { transform: translateY(-3px); }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes breathe { 50% { opacity: 1; transform: scale(1.035); } }
+@keyframes blink { 50% { transform: scaleY(0.1); } }
+
+.status { margin: 12px 0 0; color: var(--muted); font-size: 14px; letter-spacing: 0.04em; min-height: 1.5em; text-align: center; }
+.caption {
+  margin: 8px 0 0;
+  max-width: 720px;
+  min-height: 3em;
+  text-align: center;
+  font-size: clamp(17px, 2.4vw, 21px);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.caption.user { color: var(--muted); font-style: italic; }
+
+.log {
+  max-height: 34vh;
+  overflow-y: auto;
+  margin: 0 auto;
+  width: min(760px, 100% - 32px);
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(10, 18, 30, 0.7);
+  font-size: 15px;
+}
+.log .msg { margin: 0 0 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.log .msg.you { color: var(--muted); }
+.log .msg b { color: var(--accent); font-weight: 600; margin-right: 6px; }
+.log pre { background: #02060b; border: 1px solid var(--line); border-radius: 8px; padding: 10px; overflow-x: auto; white-space: pre; }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+}
+.mic {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.4s;
+}
+.mic svg { width: 22px; height: 22px; fill: var(--accent); }
+.mic[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.typed input {
+  width: min(280px, 70vw);
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(10, 18, 30, 0.7);
+  color: var(--text);
+  font: inherit;
+}
+.toggles { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] { color: var(--text); border-color: var(--accent); }
+a.chip { text-decoration: none; display: inline-block; }
+.chip.select { padding: 0; display: inline-flex; }
+.chip select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.chip select option { background: var(--bg-2); color: var(--text); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit, .halo, .eye.blink { animation: none !important; }
+}

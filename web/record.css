@@ -1,0 +1,35 @@
+body.recorder { display: block; }
+.rec-wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+.rec-wrap h1 { font-size: clamp(22px, 4vw, 30px); margin: 20px 0 8px; font-weight: 600; }
+.rec-wrap h2 { font-size: 17px; margin: 0 0 8px; font-weight: 600; }
+.lead { color: var(--muted); margin: 0 0 20px; }
+.rec-wrap code { color: var(--accent); }
+.card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(10, 18, 30, 0.7);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.setup { display: grid; gap: 12px; }
+.setup label { display: grid; gap: 4px; color: var(--muted); font-size: 14px; }
+.setup input, .setup select, .rec-wrap textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.setup summary { cursor: pointer; color: var(--text); }
+.hint { color: var(--muted); font-size: 14px; margin: 8px 0; }
+.progress { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+.current { font-size: clamp(20px, 3.5vw, 26px); line-height: 1.4; resize: vertical; }
+.meter { height: 6px; border-radius: 3px; background: var(--line); margin: 12px 0; overflow: hidden; }
+#meter-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.08s; }
+.buttons { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.buttons audio { height: 36px; max-width: 100%; }
+.recorder[data-state="hearing"] .mic { background: color-mix(in srgb, #ff7a7a 25%, transparent); border-color: #ff7a7a; }
+kbd { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; margin-left: 4px; }
+button:disabled { opacity: 0.45; cursor: default; }

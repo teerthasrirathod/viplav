@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>VIPLAV Recorder</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/record.css">
+</head>
+<body data-state="idle" class="recorder">
+  <main class="rec-wrap">
+    <header>
+      <a class="chip" href="/">← Back to VIPLAV</a>
+      <h1>Build a voice for your language</h1>
+      <p class="lead">No speech model understands or speaks Lambadi yet. Every sentence you record here,
+        with its exact text, is training data that can change that. Recordings stay on this machine, in
+        <code>data/recordings/</code>.</p>
+    </header>
+
+    <section class="card setup">
+      <label>Your name or initials <input id="speaker" placeholder="e.g. teertha" maxlength="40"></label>
+      <label>Language <select id="rec-lang"></select></label>
+      <details>
+        <summary>Sentences to read (<span id="count">0</span>)</summary>
+        <p class="hint">Paste one sentence per line. Everyday sentences, stories, proverbs, numbers and
+          names are all useful. Write them the way you'd want them read.</p>
+        <textarea id="sentences" rows="8" placeholder="One sentence per line"></textarea>
+      </details>
+    </section>
+
+    <section class="card prompt">
+      <p class="progress"><span id="pos">0</span> / <span id="total">0</span></p>
+      <textarea id="current" class="current" rows="3" placeholder="Type or paste the sentence you'll say"></textarea>
+      <div class="meter"><div id="meter-fill"></div></div>
+      <div class="buttons">
+        <button id="rec" class="mic">● Record <kbd>R</kbd></button>
+        <audio id="preview" controls hidden></audio>
+        <button id="save" class="chip" disabled>Save <kbd>Enter</kbd></button>
+        <button id="skip" class="chip">Skip <kbd>→</kbd></button>
+      </div>
+      <p id="msg" class="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card">
+      <h2>Collected so far</h2>
+      <p id="stats" class="hint">Nothing yet.</p>
+      <p class="hint">A rough guide: an hour or two of one clear speaker is a realistic start for a
+        voice. Understanding speech needs more hours, from many different speakers. Read naturally, in a
+        quiet room, one sentence per clip, and leave a short pause before and after.</p>
+    </section>
+  </main>
+  <script src="/static/mic.js"></script>
+  <script src="/static/record.js"></script>
+</body>
+</html>
