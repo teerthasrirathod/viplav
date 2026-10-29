@@ -30,6 +30,8 @@ git clone https://github.com/<you>/viplav && cd viplav
 
 Open http://127.0.0.1:8765, pick the language you'll speak, tap **Tap to talk** (or press Space), and talk. Headphones help. To tell VIPLAV about yourself, copy `data/profile.example.md` to `data/profile.md`. Conversations are saved as text in `data/transcripts/`.
 
+To use it from a phone or tablet, see [docs/PHONE.md](docs/PHONE.md).
+
 ## A long thinking session
 
 VIPLAV is built for long sessions of thinking out loud, jumping between many things at once.
