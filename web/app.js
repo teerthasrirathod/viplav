@@ -484,6 +484,12 @@
     ws.onclose = (e) => {
       setState("offline");
       turnOpen = false;
+      if (e.code === 4500) {
+        // The brain couldn't start (e.g. Claude Code not signed in): keep its message up, retry slowly.
+        setState("error");
+        setTimeout(connect, 10000);
+        return;
+      }
       setStatus(e.code === 4401 ? "Access token missing or wrong (add ?token=… to the URL)." : "Disconnected. Reconnecting…");
       if (e.code !== 4401) setTimeout(connect, 1500);
     };

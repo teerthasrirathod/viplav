@@ -27,6 +27,8 @@ def _flag(name: str, default: bool = False) -> bool:
 
 @dataclass(frozen=True)
 class Settings:
+    brain: str  # "subscription" (your Claude plan, via Claude Code) or "api" (pay per use)
+    subscription_model: str
     model: str
     effort: str
     fast_mode: bool
@@ -49,7 +51,13 @@ class Settings:
 def load_settings() -> Settings:
     _load_dotenv(ROOT / ".env")
     env = os.environ.get
+    brain = env("VIPLAV_BRAIN", "subscription").strip().lower()
+    if brain not in ("subscription", "api"):
+        raise ValueError("VIPLAV_BRAIN must be subscription or api")
     return Settings(
+        brain=brain,
+        # Empty: whatever model your plan uses by default in Claude Code.
+        subscription_model=env("VIPLAV_SUBSCRIPTION_MODEL", "").strip(),
         model=env("VIPLAV_MODEL", "claude-opus-5-5"),
         effort=env("VIPLAV_EFFORT", "medium"),
         fast_mode=_flag("VIPLAV_FAST_MODE"),

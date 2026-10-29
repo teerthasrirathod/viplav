@@ -4,8 +4,10 @@
 
 You talk, VIPLAV talks back, through an animated face in your browser. It's built for people who think in more than one language: it answers in the mix you used (English, Hindi, Telugu, Lambadi), writes each language in its own script, and gives each language its own voice, even inside a single sentence.
 
-- **The mind is Claude** (Anthropic's model), with web search. That's the only paid part: you need an Anthropic API key, and you pay per conversation.
-- **The ears and the voice are free.** They work in the browser with zero setup, or with open-source models running on your own machine. There are no speech API keys and no subscriptions.
+- **The mind is Claude**, with web search. By default it uses the Claude plan you already have, through the official Claude Code program, so it costs nothing extra.
+- **The ears and the voice are free.** They work in the browser with zero setup, or with open-source models running on your own machine. There are no speech API keys and no extra subscriptions.
+
+Low cost is the project's first rule: see [docs/COST.md](docs/COST.md).
 
 ```
  you speak ──► ears ──► Claude ──► sentence by sentence, split by language ──► voice ──► face
@@ -15,12 +17,12 @@ You talk, VIPLAV talks back, through an animated face in your browser. It's buil
 
 ## Quick start
 
-You need Python 3.10+ and Chrome, Edge or Safari.
+You need Python 3.10+, Chrome, Edge or Safari, and [Claude Code](https://code.claude.com) signed in with your Claude plan (run `claude` once and log in).
 
 ```bash
 git clone https://github.com/<you>/viplav && cd viplav
-./run.sh          # the first run creates .env, then stops
-# put your ANTHROPIC_API_KEY into .env, and set VIPLAV_USER_NAME and VIPLAV_LANGUAGES
+./run.sh          # the first run creates .env with free defaults
+# optional: set VIPLAV_USER_NAME and VIPLAV_LANGUAGES in .env
 ./run.sh
 ```
 
@@ -43,7 +45,7 @@ VIPLAV is built for long sessions of thinking out loud, jumping between many thi
   - "Park the company name for now."
   - "We decided X, mark it."
   - "Summarise where everything stands."
-- **Cost.** A 2–3 hour session at the default `medium` effort should cost roughly $3–10 in Claude usage. This is an estimate, not a measurement. It goes up with web searches and with `high` effort. Caching means each turn mostly pays for the new part of the conversation. Check real spend at console.anthropic.com.
+- **Cost.** With the default subscription brain, a long session costs nothing extra; it uses your plan's usage limits. To make them last (lower effort, Sonnet, New chat when you change subject), see [docs/COST.md](docs/COST.md). If you hit a limit, VIPLAV tells you, and works again when it resets.
 - **Comfort.**
   - Use headphones, so VIPLAV doesn't hear itself.
   - Keep **Transcript** open if you like to see the words.
@@ -83,7 +85,9 @@ Claude's reply is cut into sentences while it's still being written. Each senten
 
 | Path | What's there |
 |---|---|
-| `viplav/brain.py` | The Claude conversation, VIPLAV's voice prompt, and the tool loop |
+| `viplav/claude_code.py` | The default brain: your Claude plan, through the `claude` program |
+| `viplav/brain.py` | The voice prompt, and the optional pay-per-use API brain |
+| `viplav/mcp_board.py` | The board tool, served to Claude Code over MCP |
 | `viplav/board.py` | The thinking board: threads, categories, saving, and the `update_board` tool |
 | `viplav/languages.py` | Language settings, the multilingual prompt, splitting text by script |
 | `viplav/engines/tts.py`, `stt.py` | Voice and listening engines (plugins: one class each) |

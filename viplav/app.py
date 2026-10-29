@@ -35,6 +35,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .board import Board
 from .brain import Brain
+from .claude_code import ClaudeCodeBrain, SubscriptionBrainError
 from .config import ROOT, Settings, load_settings
 from .engines.stt import WhisperSTT
 from .engines.tts import VoiceRouter
@@ -161,6 +162,8 @@ class VoiceSession:
             await self.send(type="turn_end", turn=turn)
         except asyncio.CancelledError:
             raise
+        except SubscriptionBrainError as exc:
+            await self.send(type="error", message=str(exc))
         except anthropic.AuthenticationError:
             await self.send(type="error", message="Claude rejected the API key. Check ANTHROPIC_API_KEY in .env.")
         except anthropic.APIStatusError as exc:
@@ -266,7 +269,7 @@ def create_app(
     stt=None,
 ) -> FastAPI:
     settings = settings or load_settings()
-    brain_factory = brain_factory or Brain
+    brain_factory = brain_factory or (ClaudeCodeBrain if settings.brain == "subscription" else Brain)
     voice = voice or VoiceRouter.from_spec(settings.tts)
     if stt is None and settings.stt == "whisper":
         stt = WhisperSTT(settings.whisper_model, allowed={lang.voice_lang for lang in settings.languages})
@@ -330,8 +333,14 @@ def create_app(
             await ws.close(code=4401)
             return
         await ws.accept()
+        try:
+            brain = brain_factory(settings)
+        except SubscriptionBrainError as exc:
+            await ws.send_text(json.dumps({"type": "error", "message": str(exc)}))
+            await ws.close(code=4500)
+            return
         transcript = Transcript(settings.transcripts_dir) if settings.transcripts_dir else None
-        await VoiceSession(ws, brain_factory(settings), voice, stt, transcript).run()
+        await VoiceSession(ws, brain, voice, stt, transcript).run()
 
     app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
     return app
@@ -342,7 +351,10 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     settings = load_settings()
-    log.info("Mind: %s (effort %s)", settings.model, settings.effort)
+    if settings.brain == "subscription":
+        log.info("Mind: your Claude plan, through Claude Code (%s, effort %s)", settings.subscription_model or "plan default", settings.effort)
+    else:
+        log.info("Mind: Claude API, pay per use (%s, effort %s)", settings.model, settings.effort)
     log.info("Languages: %s", ", ".join(lang.name for lang in settings.languages))
     log.info("Voice: %s, listening: %s", settings.tts, settings.stt)
     log.info("Open http://%s:%d in Chrome, Edge or Safari", settings.host, settings.port)

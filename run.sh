@@ -3,7 +3,15 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-[ -f .env ] || { cp .env.example .env; echo "Created .env. Add your ANTHROPIC_API_KEY to it, then run ./run.sh again."; exit 1; }
+if [ ! -f .env ]; then
+  cp .env.example .env
+  echo "Created .env with the free defaults (your Claude plan, browser voice). Edit it if you like."
+fi
+if grep -qE '^VIPLAV_BRAIN=(subscription)?\s*$' .env && ! command -v claude >/dev/null; then
+  echo "VIPLAV uses your Claude plan through Claude Code, which isn't installed yet."
+  echo "Install it from https://code.claude.com, run 'claude' once to sign in, then run ./run.sh again."
+  exit 1
+fi
 
 extras=$(grep -E '^VIPLAV_(TTS|STT)=' .env | cut -d= -f2 | tr ',' '\n' | grep -E '^(kokoro|mms|indic-parler|whisper)$' | sort -u | paste -sd, - || true)
 if [ ! -d .venv ] || [ "$(cat .venv/.extras 2>/dev/null)" != "$extras" ]; then
