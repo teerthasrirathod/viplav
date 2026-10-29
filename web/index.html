@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body data-state="offline">
+  <div class="workspace">
   <main class="stage">
     <svg id="face" viewBox="0 0 400 400" aria-label="VIPLAV's face" role="img">
       <defs>
@@ -38,6 +39,16 @@
     <p id="caption" class="caption" aria-live="polite"></p>
   </main>
 
+  <section id="board" class="board" aria-label="Thinking board" hidden>
+    <header>
+      <h2>Board <span id="board-count" class="count"></span></h2>
+      <a id="board-download" class="chip" href="/api/board.md" title="Download the board as notes">Download</a>
+    </header>
+    <p id="board-empty" class="hint">Talk through what's on your mind. VIPLAV files each thread here as you go.</p>
+    <div id="board-groups"></div>
+  </section>
+  </div>
+
   <section id="log" class="log" aria-label="Conversation" hidden></section>
 
   <footer class="controls">
@@ -53,6 +64,7 @@
         <span class="visually-hidden">Language</span>
         <select id="lang" aria-label="Language you're speaking"></select>
       </label>
+      <button id="toggle-board" class="chip" aria-pressed="false" title="Show the threads VIPLAV is keeping track of">Board</button>
       <button id="toggle-log" class="chip" aria-pressed="false" title="Show the conversation as text">Transcript</button>
       <button id="toggle-barge" class="chip" aria-pressed="true" title="Speaking while VIPLAV talks interrupts it. Turn off on speakers if it interrupts itself.">Interrupt by voice</button>
       <button id="reset" class="chip" title="Start a new conversation">New chat</button>

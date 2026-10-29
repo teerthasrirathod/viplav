@@ -1,10 +1,13 @@
 """VIPLAV's mind: Claude, in one conversation streamed turn by turn."""
 
 import datetime as dt
+import json
 from collections.abc import AsyncIterator
 
 import anthropic
 
+from . import board as board_mod
+from .board import Board, InvalidBoardUpdate
 from .config import Settings
 from .languages import language_prompt
 
@@ -44,8 +47,8 @@ be guessing at, and mention briefly that you're checking.\
 """
 
 
-def build_system_prompt(settings: Settings) -> str:
-    parts = [VOICE_PROMPT, language_prompt(list(settings.languages))]
+def build_system_prompt(settings: Settings, board: Board | None = None) -> str:
+    parts = [VOICE_PROMPT, language_prompt(list(settings.languages)), board_mod.BOARD_PROMPT]
     if settings.user_name:
         parts.append(f"The user's name is {settings.user_name}.")
     if settings.profile_path.is_file():
@@ -55,6 +58,8 @@ def build_system_prompt(settings: Settings) -> str:
                 "Notes the user wrote about themselves, to keep in mind:\n"
                 f"<about_user>\n{profile}\n</about_user>"
             )
+    if board and (snapshot := board.prompt_snapshot()):
+        parts.append(snapshot)
     parts.append(f"Today's date is {dt.date.today():%A, %B %-d, %Y}.")
     return "\n\n".join(parts)
 
@@ -66,14 +71,15 @@ REFUSAL_LINE = "I'm not able to help with that one."
 class Brain:
     """Holds the conversation history and streams Claude's replies.
 
-    `respond` yields ("text", delta) as Claude writes, and ("status", message) when it
-    starts using a tool, so the face can say what it's doing.
+    `respond` yields ("text", delta) as Claude writes, ("status", message) when it
+    starts searching the web, and ("board", board) whenever the thinking board changes.
     """
 
-    def __init__(self, settings: Settings, client: anthropic.AsyncAnthropic | None = None):
+    def __init__(self, settings: Settings, client: anthropic.AsyncAnthropic | None = None, board: Board | None = None):
         self.settings = settings
         self.client = client or anthropic.AsyncAnthropic()
-        self.system = build_system_prompt(settings)
+        self.board = board or Board(settings.board_path)
+        self.system = build_system_prompt(settings, self.board)
         self.history: list = []
 
     def reset(self) -> None:
@@ -91,8 +97,9 @@ class Brain:
             # Caches the system prompt and conversation so each turn only pays for what's new.
             "cache_control": {"type": "ephemeral"},
         }
+        params["tools"] = [board_mod.TOOL]
         if s.web_search:
-            params["tools"] = [
+            params["tools"] += [
                 {"type": "web_search_20260209", "name": "web_search", "max_uses": 4},
                 {"type": "web_fetch_20260209", "name": "web_fetch", "max_uses": 3},
             ]
@@ -106,22 +113,33 @@ class Brain:
             params["fallbacks"] = "default"
         return params
 
-    async def respond(self, user_text: str) -> AsyncIterator[tuple[str, str]]:
+    async def respond(self, user_text: str) -> AsyncIterator[tuple[str, object]]:
         self.history.append({"role": "user", "content": user_text})
         said: list[str] = []
         turn_open = True  # False once a complete assistant message is in history
+        json_retries = 0
+        cutoffs = 0
         try:
             while True:
-                async with self.client.beta.messages.stream(**self._request()) as stream:
-                    async for event in stream:
-                        if event.type == "text":
-                            said.append(event.text)
-                            yield "text", event.text
-                        elif event.type == "content_block_start":
-                            block = event.content_block
-                            if block.type == "server_tool_use":
-                                yield "status", _tool_status(block.name)
-                    message = await stream.get_final_message()
+                try:
+                    async with self.client.beta.messages.stream(**self._request()) as stream:
+                        async for event in stream:
+                            if event.type == "text":
+                                said.append(event.text)
+                                yield "text", event.text
+                            elif event.type == "content_block_start":
+                                block = event.content_block
+                                if block.type == "server_tool_use":
+                                    yield "status", _tool_status(block.name)
+                        message = await stream.get_final_message()
+                except ValueError:
+                    # A board update streamed as JSON the SDK couldn't parse at all. It
+                    # broke before the tool call completed, so re-issue the turn (bounded).
+                    json_retries += 1
+                    if json_retries > 2:
+                        raise
+                    continue
+                json_retries = 0
 
                 if message.stop_reason == "refusal":
                     self.history.append({"role": "assistant", "content": REFUSAL_LINE})
@@ -132,6 +150,22 @@ class Brain:
                 # next request continues exactly where this one left off.
                 self.history.append({"role": "assistant", "content": message.content})
                 turn_open = False
+                tool_uses = [b for b in message.content if b.type == "tool_use"]
+                if tool_uses and message.stop_reason in ("tool_use", "max_tokens"):
+                    if message.stop_reason == "max_tokens":
+                        # Cut off mid-call: a partial input parses as valid, so never run it.
+                        cutoffs += 1
+                        if cutoffs > 2:
+                            raise RuntimeError("board update kept getting cut off")
+                        results = [_cut_off(b) for b in tool_uses]
+                    else:
+                        results = [self._run_tool(b) for b in tool_uses]
+                    self.history.append({"role": "user", "content": results})
+                    if not any(r.get("is_error") for r in results):
+                        yield "board", self.board.to_dict()
+                    turn_open = True
+                    said = []
+                    continue
                 if message.stop_reason != "pause_turn":
                     return
                 # A long server-side search paused the turn; send it back to resume.
@@ -146,6 +180,26 @@ class Brain:
                     self.history.append(
                         {"role": "assistant", "content": spoken + " …" if spoken else INTERRUPTED_NOTE}
                     )
+
+    def _run_tool(self, block) -> dict:
+        result = {"type": "tool_result", "tool_use_id": block.id}
+        if block.name != "update_board":
+            return {**result, "is_error": True, "content": f"Unknown tool {block.name}"}
+        try:
+            summary = self.board.apply(block.input)
+        except InvalidBoardUpdate as exc:
+            # Includes inputs the tolerant stream parser cut short: let Claude resend them.
+            return {**result, "is_error": True, "content": json.dumps({"INVALID_INPUT": str(exc)})}
+        return {**result, "content": json.dumps(summary, ensure_ascii=False)}
+
+
+def _cut_off(block) -> dict:
+    return {
+        "type": "tool_result",
+        "tool_use_id": block.id,
+        "is_error": True,
+        "content": "The call was cut off before it finished. Send a smaller update.",
+    }
 
 
 def _tool_status(name: str) -> str:

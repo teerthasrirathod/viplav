@@ -26,6 +26,29 @@ git clone https://github.com/<you>/viplav && cd viplav
 
 Open http://127.0.0.1:8765, pick the language you'll speak, tap **Tap to talk** (or press Space), and talk. Headphones help. To tell VIPLAV about yourself, copy `data/profile.example.md` to `data/profile.md`. Conversations are saved as text in `data/transcripts/`.
 
+## A long thinking session
+
+VIPLAV is built for long sessions of thinking out loud, jumping between many things at once.
+
+- **The board.** As you talk, VIPLAV files every topic as a thread on the **Board** (beside the face, or below it on a phone):
+  - a title and a category (Projects, Company, Study, Family, and so on)
+  - a status: open, exploring, decided, to do, waiting, parked or done
+  - a one-line summary and the next step
+
+  Dump ten things in one breath and it files all ten, groups them, and then talks through them with you. Jump back to one an hour later and it picks the thread up from where you left it.
+- **It carries over.** The board is saved after every change (`data/board.json`, plus readable notes in `data/board.md`) and read back at the start of the next session. **New chat** clears the conversation but keeps the board. To finish or delete threads, just say so.
+- **Things to say:**
+  - "Put these on the board…"
+  - "What's open?"
+  - "Park the company name for now."
+  - "We decided X, mark it."
+  - "Summarise where everything stands."
+- **Cost.** A 2–3 hour session at the default `medium` effort should cost roughly $3–10 in Claude usage. This is an estimate, not a measurement. It goes up with web searches and with `high` effort. Caching means each turn mostly pays for the new part of the conversation. Check real spend at console.anthropic.com.
+- **Comfort.**
+  - Use headphones, so VIPLAV doesn't hear itself.
+  - Keep **Transcript** open if you like to see the words.
+  - If the browser recognizer mishears you often, try the language picker, or local Whisper later.
+
 ## Free voices and ears
 
 | | Engine | Languages | Runs on | Licence |
@@ -60,7 +83,8 @@ Claude's reply is cut into sentences while it's still being written. Each senten
 
 | Path | What's there |
 |---|---|
-| `viplav/brain.py` | The Claude conversation and VIPLAV's voice prompt |
+| `viplav/brain.py` | The Claude conversation, VIPLAV's voice prompt, and the tool loop |
+| `viplav/board.py` | The thinking board: threads, categories, saving, and the `update_board` tool |
 | `viplav/languages.py` | Language settings, the multilingual prompt, splitting text by script |
 | `viplav/engines/tts.py`, `stt.py` | Voice and listening engines (plugins: one class each) |
 | `viplav/speech.py` | Sentence splitting and cleaning text for speech |

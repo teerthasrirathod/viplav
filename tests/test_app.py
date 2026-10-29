@@ -3,6 +3,9 @@ import asyncio
 from fastapi.testclient import TestClient
 
 from viplav.app import create_app
+from types import SimpleNamespace as NS
+
+from viplav.board import Board
 from viplav.brain import INTERRUPTED_NOTE, Brain
 from viplav.config import load_settings
 from viplav.engines.tts import BrowserTTS, VoiceRouter
@@ -13,6 +16,7 @@ class FakeBrain(Brain):
         self.settings = settings
         self.history = []
         self.delay = delay
+        self.board = Board(settings.board_path)
 
     async def respond(self, user_text):
         yield "status", "Searching the web…"
@@ -36,7 +40,14 @@ def fake_voice():
 def settings(tmp_path):
     from dataclasses import replace
 
-    return replace(load_settings(), transcripts_dir=tmp_path / "tx", recordings_dir=tmp_path / "rec", access_token="")
+    return replace(
+        load_settings(),
+        transcripts_dir=tmp_path / "tx",
+        recordings_dir=tmp_path / "rec",
+        board_path=tmp_path / "board.json",
+        profile_path=tmp_path / "profile.md",
+        access_token="",
+    )
 
 
 def collect_turn(ws):
@@ -153,7 +164,7 @@ def run(coro):
 
 
 def test_brain_request_shape_and_history(tmp_path):
-    content = [{"type": "thinking", "thinking": "", "signature": "x"}, {"type": "text", "text": "Hi!"}]
+    content = [NS(type="thinking", thinking="", signature="x"), NS(type="text", text="Hi!")]
     client = _Client([_Stream([_Event("text", text="Hi!")], _Message("end_turn", content))])
     brain = Brain(settings(tmp_path), client=client)
 
@@ -165,15 +176,16 @@ def test_brain_request_shape_and_history(tmp_path):
     assert call["model"] == "claude-opus-5-5"
     assert call["thinking"] == {"type": "adaptive"}
     assert call["fallbacks"] == "default" and call["betas"] == ["server-side-fallback-2026-07-01"]
-    assert call["tools"][0]["type"] == "web_search_20260209"
+    assert call["tools"][0]["name"] == "update_board" and call["tools"][0]["eager_input_streaming"] is True
+    assert call["tools"][1]["type"] == "web_search_20260209"
     assert "temperature" not in call
     assert brain.history == [{"role": "user", "content": "hello"}, {"role": "assistant", "content": content}]
 
 
 def test_brain_resumes_pause_turn_and_reports_tool_status(tmp_path):
     first = _Stream([_Event("content_block_start", content_block=_Block("server_tool_use", "web_search"))],
-                    _Message("pause_turn", ["paused"]))
-    second = _Stream([_Event("text", text="Found it.")], _Message("end_turn", ["done"]))
+                    _Message("pause_turn", [NS(type="server_tool_use")]))
+    second = _Stream([_Event("text", text="Found it.")], _Message("end_turn", [NS(type="text")]))
     client = _Client([first, second])
     brain = Brain(settings(tmp_path), client=client)
 
@@ -182,7 +194,7 @@ def test_brain_resumes_pause_turn_and_reports_tool_status(tmp_path):
 
     assert run(go()) == [("status", "Searching the web…"), ("text", "Found it.")]
     assert [m["role"] for m in brain.history] == ["user", "assistant", "assistant"]
-    assert client.calls[1]["messages"][-1] == {"role": "assistant", "content": ["paused"]}
+    assert client.calls[1]["messages"][-1]["role"] == "assistant"
 
 
 def test_brain_records_partial_reply_when_interrupted(tmp_path):

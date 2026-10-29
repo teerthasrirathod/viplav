@@ -40,6 +40,7 @@ class Settings:
     profile_path: Path
     transcripts_dir: Path
     recordings_dir: Path
+    board_path: Path
     access_token: str
     host: str
     port: int
@@ -62,6 +63,7 @@ def load_settings() -> Settings:
         profile_path=Path(env("VIPLAV_PROFILE", ROOT / "data" / "profile.md")),
         transcripts_dir=Path(env("VIPLAV_TRANSCRIPTS", ROOT / "data" / "transcripts")),
         recordings_dir=Path(env("VIPLAV_RECORDINGS", ROOT / "data" / "recordings")),
+        board_path=Path(env("VIPLAV_BOARD", ROOT / "data" / "board.json")),
         access_token=env("VIPLAV_ACCESS_TOKEN", "").strip(),
         host=env("VIPLAV_HOST", "127.0.0.1"),
         port=int(env("VIPLAV_PORT", "8765")),

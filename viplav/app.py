@@ -11,6 +11,7 @@ WebSocket protocol (JSON text frames, plus binary audio frames when VIPLAV_STT=w
                     {"type": "state", "state": "thinking"|"speaking"|"idle"}
                     {"type": "status", "text": ...}          e.g. "Searching the web…"
                     {"type": "text_delta", "turn": n, "text": ...}
+                    {"type": "board", "threads": [...]}      the thinking board changed
                     {"type": "speech", "turn": n, "seq": i, "text": ..., "lang": ..., "audio": b64|null, "mime": ...}
                     {"type": "turn_end", "turn": n}
                     {"type": "error", "message": ...}
@@ -29,9 +30,10 @@ from pathlib import Path
 
 import anthropic
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
+from .board import Board
 from .brain import Brain
 from .config import ROOT, Settings, load_settings
 from .engines.stt import WhisperSTT
@@ -145,6 +147,9 @@ class VoiceSession:
                 if kind == "status":
                     await self.send(type="status", text=payload)
                     continue
+                if kind == "board":
+                    await self.send(type="board", **payload)
+                    continue
                 full_reply.append(payload)
                 await self.send(type="text_delta", turn=turn, text=payload)
                 for sentence in chunker.feed(payload):
@@ -181,6 +186,7 @@ class VoiceSession:
             stt=self.stt.name if self.stt else "browser",
             languages=[{"code": lang.code, "name": lang.name, "locale": lang.locale} for lang in settings.languages],
             user=settings.user_name,
+            board=self.brain.board.to_dict(),
         )
         try:
             while True:
@@ -307,6 +313,16 @@ def create_app(
         if not authorized(request.query_params.get("token")):
             raise HTTPException(401)
         return recordings.stats()
+
+    @app.get("/api/board.md")
+    async def board_markdown(request: Request):
+        if not authorized(request.query_params.get("token")):
+            raise HTTPException(401)
+        return PlainTextResponse(
+            Board(settings.board_path).to_markdown(),
+            media_type="text/markdown; charset=utf-8",
+            headers={"Content-Disposition": 'attachment; filename="viplav-board.md"'},
+        )
 
     @app.websocket("/ws")
     async def ws_endpoint(ws: WebSocket):

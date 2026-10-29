@@ -245,6 +245,75 @@
     return words.filter((w) => spoken.has(w)).length / words.length > 0.6;
   }
 
+  // ---------- thinking board ----------
+  const boardEl = $("board");
+  const boardBtn = $("toggle-board");
+  const STATUS_LABELS = { open: "open", exploring: "exploring", decided: "decided", action: "to do", waiting: "waiting", parked: "parked", done: "done" };
+  let boardSeen = {}; // id -> updated, to highlight what just changed
+
+  function showBoard(show, remember = false) {
+    boardEl.hidden = !show;
+    boardBtn.setAttribute("aria-pressed", String(show));
+    if (remember) store.set("board", show ? "1" : "0"); // only the user's own choice sticks
+  }
+
+  function renderBoard(threads, highlight) {
+    const groups = new Map();
+    for (const t of threads) {
+      if (!groups.has(t.category)) groups.set(t.category, []);
+      groups.get(t.category).push(t);
+    }
+    const live = threads.filter((t) => t.status !== "done").length;
+    $("board-count").textContent = threads.length ? `· ${live} open of ${threads.length}` : "";
+    $("board-empty").hidden = threads.length > 0;
+    const root = $("board-groups");
+    root.replaceChildren();
+    for (const [category, items] of groups) {
+      const g = document.createElement("div");
+      g.className = "group";
+      const h = document.createElement("h3");
+      h.textContent = category;
+      g.appendChild(h);
+      for (const t of items) {
+        const card = document.createElement("article");
+        card.className = `thread status-${t.status}`;
+        if (highlight && boardSeen[t.id] !== t.updated) card.classList.add("fresh");
+        const top = document.createElement("div");
+        top.className = "top";
+        const title = document.createElement("span");
+        title.className = "title";
+        title.textContent = t.title;
+        const pill = document.createElement("span");
+        pill.className = `pill ${t.status}`;
+        pill.textContent = STATUS_LABELS[t.status] || t.status;
+        top.append(title, pill);
+        card.appendChild(top);
+        if (t.summary) {
+          const p = document.createElement("p");
+          p.className = "summary";
+          p.textContent = t.summary;
+          card.appendChild(p);
+        }
+        if (t.next_step) {
+          const n = document.createElement("p");
+          n.className = "next";
+          n.textContent = t.next_step;
+          card.appendChild(n);
+        }
+        g.appendChild(card);
+      }
+      root.appendChild(g);
+    }
+    boardSeen = Object.fromEntries(threads.map((t) => [t.id, t.updated]));
+    setTimeout(() => document.querySelectorAll(".thread.fresh").forEach((c) => c.classList.remove("fresh")), 2500);
+  }
+
+  boardBtn.addEventListener("click", () => showBoard(boardEl.hidden, true));
+  {
+    const token = new URLSearchParams(location.search).get("token");
+    if (token) $("board-download").href += `?token=${encodeURIComponent(token)}`;
+  }
+
   // ---------- language choice ----------
   function fillLanguages() {
     langSel.replaceChildren();
@@ -455,7 +524,15 @@
         sttMode = msg.stt;
         languages = msg.languages;
         fillLanguages();
+        if (msg.board) {
+          renderBoard(msg.board.threads, false);
+          showBoard(store.get("board") === "1" || (store.get("board") === null && msg.board.threads.length > 0));
+        }
         restingState();
+        break;
+      case "board":
+        renderBoard(msg.threads, true);
+        if (boardEl.hidden && store.get("board") !== "0") showBoard(true); // first threads: open it
         break;
       case "transcript":
         if (msg.text) {
