@@ -60,7 +60,8 @@ def build_system_prompt(settings: Settings, board: Board | None = None) -> str:
             )
     if board and (snapshot := board.prompt_snapshot()):
         parts.append(snapshot)
-    parts.append(f"Today's date is {dt.date.today():%A, %B %-d, %Y}.")
+    today = dt.date.today()
+    parts.append(f"Today's date is {today:%A, %B} {today.day}, {today.year}.")  # %-d isn't portable to Windows
     return "\n\n".join(parts)
 
 

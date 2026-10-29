@@ -17,6 +17,8 @@ Low cost is the project's first rule: see [docs/COST.md](docs/COST.md).
 
 ## Quick start
 
+**New to this? Follow the step-by-step guide: [docs/SETUP.md](docs/SETUP.md)** (Mac, Windows, Linux).
+
 You need Python 3.10+, Chrome, Edge or Safari, and [Claude Code](https://code.claude.com) signed in with your Claude plan (run `claude` once and log in).
 
 ```bash

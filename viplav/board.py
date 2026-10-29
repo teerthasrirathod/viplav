@@ -125,7 +125,8 @@ class Board:
         self.path.with_suffix(".md").write_text(self.to_markdown(), encoding="utf-8")
 
     def to_markdown(self) -> str:
-        lines = [f"# Thinking board ({dt.date.today():%B %-d, %Y})", ""]
+        today = dt.date.today()
+        lines = [f"# Thinking board ({today:%B} {today.day}, {today.year})", ""]
         category = None
         for t in self.to_dict()["threads"]:
             if t["category"] != category:

@@ -141,7 +141,8 @@ class ClaudeCodeBrain:
         except BaseException:
             # Interrupted: SIGINT lets Claude Code end the turn cleanly and save it.
             if proc.returncode is None:
-                with contextlib.suppress(ProcessLookupError):
+                # Windows has no SIGINT for child processes; there it goes straight to kill below.
+                with contextlib.suppress(ProcessLookupError, ValueError, OSError):
                     proc.send_signal(signal.SIGINT)
                 try:
                     await asyncio.wait_for(proc.wait(), 5)
