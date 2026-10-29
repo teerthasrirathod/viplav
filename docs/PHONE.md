@@ -19,6 +19,8 @@ If you open `http://192.168.x.x:8765` on your phone, the page loads but the micr
    ```
    The second command prints your address, which looks like `https://my-computer.my-tailnet.ts.net`.
 
+   The first time, the first command may print "Serve is not enabled on your tailnet" with a link, and then wait. Open the link, approve it, and the command finishes by itself.
+
 ## Every time
 
 1. Start VIPLAV on your computer (`run.bat`, or `./run.sh`).
