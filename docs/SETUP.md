@@ -61,6 +61,22 @@ The first start installs VIPLAV, which takes a few minutes. When you see `Open h
 
 To stop VIPLAV, press **Ctrl+C** in the Terminal window, or close the `run.bat` window. Next time, steps 4 and 5 are all you need.
 
+## Talk to it from your tablet or phone (with Tailscale)
+
+VIPLAV runs on your computer, and you can talk to it from a tablet or phone anywhere, privately, over [Tailscale](https://tailscale.com) (free for personal use). Only your own devices can reach it.
+
+1. Install Tailscale on the computer and the tablet, signed in to the same account. Both should show as connected.
+2. Turn on HTTPS for your Tailscale network, once: in the Tailscale admin console (https://login.tailscale.com/admin/dns), enable **MagicDNS** and **HTTPS Certificates**. Browsers only allow the microphone on HTTPS pages.
+3. Start VIPLAV on the computer as usual (`run.bat` or `bash run.sh`).
+4. On the computer, open a second PowerShell or Terminal window and run:
+   ```
+   tailscale serve --bg 8765
+   ```
+   It prints an address like `https://your-pc.your-tailnet.ts.net`.
+5. On the tablet, open that address in Chrome. Allow the microphone, and talk.
+
+This keeps VIPLAV listening only on the computer itself (`127.0.0.1`). Tailscale passes your devices' connections through, so nothing is exposed to the internet. To stop sharing, run `tailscale serve --https=443 off`.
+
 ## Make it yours (optional)
 
 Open the `.env` file in the `viplav` folder with any text editor:
